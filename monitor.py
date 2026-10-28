@@ -364,7 +364,7 @@ def trigger_webhook_if_configured(restock_events, snapshot):
         append_change_log(f"ERROR triggering webhook {webhook_url}: {e}")
 
 
-def run_check(previous_state: dict) -> dict:
+def run_check(previous_state: dict, no_webhook: bool = False) -> dict:
     checked_at = now_shanghai_str()
     bwh_table = parse_third_party_table(STOCK_BWH_URL)
     dmit_table = parse_third_party_table(STOCK_DMIT_URL)
@@ -518,7 +518,7 @@ def run_check(previous_state: dict) -> dict:
             f"in_stock_count={snapshot['in_stock_count']}."
         )
 
-    if restock_events:
+    if restock_events and not no_webhook:
         trigger_webhook_if_configured(restock_events, snapshot)
 
     return snapshot
@@ -537,6 +537,7 @@ def load_existing_state() -> dict:
 def main():
     parser = argparse.ArgumentParser(description="VPS stock monitor daemon")
     parser.add_argument("--once", action="store_true", help="Run a single check and exit")
+    parser.add_argument("--no-webhook", action="store_true", help="Do not fire webhook even if restock detected")
     parser.add_argument("--interval", type=int, default=60, help="Poll interval in seconds (default: 60)")
     args = parser.parse_args()
 
@@ -545,7 +546,7 @@ def main():
 
     while True:
         try:
-            state = run_check(state)
+            state = run_check(state, no_webhook=args.no_webhook)
             print(
                 f"[{state['last_checked_at']}] Check OK | in_stock={state['in_stock_count']}/8",
                 flush=True,
