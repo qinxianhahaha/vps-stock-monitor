@@ -1,0 +1,34 @@
+name: VPS Stock Monitor
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: vps-stock-monitor
+  cancel-in-progress: false
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run single-shot stock check
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_KEY: ${{ secrets.WEBHOOK_KEY }}
+          VPS_MONITOR_DIR: ${{ github.workspace }}
+        run: python monitor.py --once
