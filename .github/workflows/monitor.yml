@@ -26,9 +26,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Restore last stock state
+        uses: actions/cache/restore@v4
+        with:
+          path: status.json
+          key: stock-state-${{ github.run_id }}
+          restore-keys: stock-state-
+
       - name: Run single-shot stock check
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_KEY: ${{ secrets.WEBHOOK_KEY }}
           VPS_MONITOR_DIR: ${{ github.workspace }}
         run: python monitor.py --once
+
+      - name: Save stock state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: status.json
+          key: stock-state-${{ github.run_id }}
